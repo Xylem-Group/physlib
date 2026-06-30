@@ -19,4 +19,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Update Lean project
-        uses: leanprover-community/lean-update@main
+        uses: leanprover-community/lean-update@6f7b598c3255645e06f5d31f9f77b7440fc16451  # main (2026-06-30, ex-ADR-0043)

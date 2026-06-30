@@ -35,7 +35,7 @@ jobs:
 
       - name: build Physlib
         id: build
-        uses: liskin/gh-problem-matcher-wrap@v3
+        uses: liskin/gh-problem-matcher-wrap@e7b7beaaafa52524748b31a381160759d68d61fb  # v3 (2026-06-30, ex-ADR-0043)
         with:
           linters: gcc
           run: |
@@ -56,7 +56,7 @@ jobs:
       - name: runLinter on Physlib
         if: ${{ always() && steps.build.outcome == 'success' || steps.build.outcome == 'failure' }}
         id: lint
-        uses: liskin/gh-problem-matcher-wrap@v3
+        uses: liskin/gh-problem-matcher-wrap@e7b7beaaafa52524748b31a381160759d68d61fb  # v3 (2026-06-30, ex-ADR-0043)
         timeout-minutes: 4
         with:
           linters: gcc
@@ -74,10 +74,10 @@ jobs:
 
       # Run the case checker action
       - name: Check Case Sensitivity
-        uses: credfeto/action-case-checker@v1.3.0
+        uses: credfeto/action-case-checker@cb652aeab29ed363bbdb7d9ee1bfcc010c46cac5  # v1.3.0 (2026-06-30, ex-ADR-0043)
 
       - name: Look for ignored files
-        uses: credfeto/action-no-ignored-files@v1.1.0
+        uses: credfeto/action-no-ignored-files@0c61dc01fd498dd8fa6786f21062be4fd158c8b1  # v1.1.0 (2026-06-30, ex-ADR-0043)
 
       - name: install Python
         if: ${{ 'ubuntu-latest' == 'ubuntu-latest' }}
@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: codespell-project/actions-codespell@v2
+      - uses: codespell-project/actions-codespell@406322ec52dd7b488e48c1c4b82e2a8b3a1bf630  # v2 (2026-06-30, ex-ADR-0043)
         with:
           exclude_file: scripts/MetaPrograms/spellingWords.txt,scripts/physlibNoShake.json
           ignore_words_file: .codespellignore
