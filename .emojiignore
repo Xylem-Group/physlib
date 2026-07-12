@@ -1,0 +1,3 @@
+# Lean source files: -> (U+2192) is the function-type arrow in Lean syntax,
+# not a decorative glyph. All .lean files are excluded from the emoji gate.
+*.lean
