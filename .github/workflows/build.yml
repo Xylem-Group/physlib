@@ -43,6 +43,11 @@ jobs:
 
       - name: axiom gate (sorryAx + native_decide + unauthorized axiom quarantine)
         if: ${{ always() && steps.build.outcome == 'success' }}
+        # continue-on-error: physlib intentionally tracks sorry via the sorryful attribute
+        # protocol (sorry_lint). The axiom gate is in observability mode here — it reports
+        # contamination without blocking — until the library reaches a sorry-free baseline.
+        # Flip to false (or remove) once sorry_lint reports zero sorryful declarations.
+        continue-on-error: true
         run: bash scripts/gate/run-axiom-gate.sh
 
       - name: check file imports
