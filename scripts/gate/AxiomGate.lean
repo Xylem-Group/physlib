@@ -1,10 +1,11 @@
 /-
   AxiomGate.lean — full-environment axiom allowlist gate for physlib.
 
-  Walks EVERY non-internal declaration whose defining module is a first-party
-  project module (module name begins with `Physlib` or `QuantumInfo`), runs
-  `collectAxioms` on each, and QUARANTINES any declaration whose transitive
-  axiom set is not a subset of the allowlist:
+  Compiled lake exe (use `lake exe axiom_gate`) that walks EVERY non-internal
+  declaration whose defining module is a first-party project module (module name
+  begins with `Physlib` or `QuantumInfo`), runs `collectAxioms` on each, and
+  QUARANTINES any declaration whose transitive axiom set is not a subset of the
+  allowlist:
 
       { propext, Classical.choice, Quot.sound }
 
@@ -23,12 +24,10 @@
     AXIOM-GATE-VERDICT PASS        (exit-intent: 0)
     AXIOM-GATE-VERDICT FAIL        (exit-intent: 1)
 
-  The Lean process always exits 0 (a `#eval` cannot set the OS exit code cleanly
-  across toolchains); the bash driver (`run-axiom-gate.sh`) decides pass/fail from
-  the `AXIOM-GATE-VERDICT` line. That keeps the trust boundary in ONE place.
+  The bash driver (`run-axiom-gate.sh`) decides pass/fail from the
+  `AXIOM-GATE-VERDICT` line.
 -/
-import Physlib
-import QuantumInfo
+import Mathlib.Lean.CoreM
 
 open Lean
 
@@ -41,7 +40,14 @@ private def isFirstPartyModule (m : Name) : Bool :=
   m == `Physlib || (`Physlib).isPrefixOf m ||
   m == `QuantumInfo || (`QuantumInfo).isPrefixOf m
 
-#eval show CoreM Unit from do
+private structure GateResult where
+  moduleCount  : Nat
+  declsScanned : Nat
+  clean        : Nat
+  quarantined  : Nat
+  lines        : Array String
+
+private def runGate : CoreM GateResult := do
   let env ← getEnv
   let mut declsScanned := 0
   let mut clean := 0
@@ -50,7 +56,6 @@ private def isFirstPartyModule (m : Name) : Bool :=
   let mut lines : Array String := #[]
   for (name, info) in env.constants.map₁.toList do
     if name.isInternal then continue
-    -- only real proof-carrying declarations (theorems, defs, opaque, axioms)
     let relevant :=
       match info with
       | .thmInfo _ | .defnInfo _ | .opaqueInfo _ | .axiomInfo _ => true
@@ -70,12 +75,18 @@ private def isFirstPartyModule (m : Name) : Bool :=
       else
         quarantined := quarantined + 1
         lines := lines.push s!"QUARANTINE {name} :: {bad.toList}"
-  IO.println s!"AXIOM-GATE modules-scanned={modulesSeen.size} decls-scanned={declsScanned} clean={clean} quarantined={quarantined}"
-  for l in lines do IO.println l
-  if quarantined == 0 && declsScanned > 0 then
+  return { moduleCount := modulesSeen.size, declsScanned, clean, quarantined, lines }
+
+unsafe def main (_ : List String) : IO Unit := do
+  initSearchPath (← findSysroot)
+  let env ← importModules (loadExts := true) #[`Physlib, `QuantumInfo] {} 0
+  let ctx : Core.Context := { fileName := "", options := {}, fileMap := default }
+  let (r, _) ← Lean.Core.CoreM.toIO runGate ctx { env }
+  IO.println s!"AXIOM-GATE modules-scanned={r.moduleCount} decls-scanned={r.declsScanned} clean={r.clean} quarantined={r.quarantined}"
+  for l in r.lines do IO.println l
+  if r.quarantined == 0 && r.declsScanned > 0 then
     IO.println "AXIOM-GATE-VERDICT PASS"
-  else if declsScanned == 0 then
-    -- an empty scan is itself suspicious (import broke / aggregator gutted): fail closed
+  else if r.declsScanned == 0 then
     IO.println "AXIOM-GATE-VERDICT FAIL (no first-party declarations scanned — fail-closed)"
   else
     IO.println "AXIOM-GATE-VERDICT FAIL"

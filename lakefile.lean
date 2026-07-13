@@ -25,6 +25,10 @@ lean_lib QuantumInfo where
 -- lean_lib ClassicalInfo
 -- lean_lib StatMech
 
+lean_exe axiom_gate where
+  supportInterpreter := true
+  srcDir := "scripts/gate"
+
 lean_exe check_file_imports where
   srcDir := "scripts"
 
